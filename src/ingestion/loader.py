@@ -3,7 +3,7 @@ import io
 import zipfile
 import xml.etree.ElementTree as ET
 from typing import List, Set, Optional
-import fitz  # PyMuPDF
+import pymupdf as fitz
 import numpy as np
 from langchain_core.documents import Document
 from src.chunking.chunker import split_documents

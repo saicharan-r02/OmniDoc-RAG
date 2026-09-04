@@ -13,6 +13,7 @@ rapidocr-onnxruntime>=1.2.3
 pdf2image>=1.17.0
 chromadb>=0.4.22
 langchain>=0.1.0
+langchain-text-splitters>=0.0.1
 langchain-groq>=0.1.0
 langchain-ollama>=0.1.0
 langchain-huggingface>=0.0.1
