@@ -341,7 +341,3 @@ pytest tests/ -v
 
 - Built for engineering students and educators.
 - Powered by [FastAPI](https://fastapi.tiangolo.com/), [ChromaDB](https://www.trychroma.com/), [LangChain](https://www.langchain.com/), [Groq](https://groq.com/), and [SentenceTransformers](https://sbert.net/).
-
-
-## Test Contribution
-This change is submitted from my second GitHub account.
