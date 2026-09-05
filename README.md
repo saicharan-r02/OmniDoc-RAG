@@ -17,6 +17,7 @@
 - [Problem & Solution](#-problem--solution)
 - [Key Features](#-key-features)
 - [System Architecture](#-system-architecture)
+- [Screenshots](#-screenshots)
 - [Project Directory Structure](#-project-directory-structure)
 - [Subject Coverage & Dataset](#-subject-coverage--dataset)
 - [API Endpoints](#-api-endpoints)
@@ -92,6 +93,30 @@
 
 ---
 
+## 📸 Screenshots
+
+### 🧠 Machine Learning — Subject Context & Smart Suggestions
+![Machine Learning Subject Selected](assets/ml-subject.png)
+*Selecting Machine Learning dynamically loads subject-specific sample questions ("How many types of ML?", "Explain supervised vs unsupervised", "What is overfitting?") — giving students an instant launchpad grounded in their course notes.*
+
+### ⚡ Neural Networks & Deep Learning — Detailed Exam-Ready Response
+![Deep Learning Grounded Response](assets/dl-response.png)
+*A detailed, curriculum-grounded answer on activation functions — complete with definitions, comparisons (Sigmoid vs Hard-Limiter), and an **Exam Tip** section extracted directly from course notes.*
+
+### 🗂️ Persistent Chat History Sidebar
+![Chat History Panel](assets/chat-history.png)
+*The History tab tracks all chat sessions with subject labels and timestamps — making it easy to revisit previous study sessions without losing context.*
+
+### 🌐 Computer Networks — Step-by-Step OSI Model Response
+![Grounded OSI Model Response](docs/screenshots/result.png)
+*A grounded, structured breakdown of all 7 OSI layers streamed live via Server-Sent Events — each layer explained with definitions, key points, and role in the network stack, sourced from CN course notes.*
+
+### 🛡️ Anti-Hallucination Relevance Gate
+![Relevance Gate Safeguard](docs/screenshots/relevance-gate.png)
+*Domain mismatch protection in action: asking cloud/DevOps questions under "Java Programming" is caught by the Relevance Gate, preventing hallucinations and guiding the student to the correct subject.*
+
+---
+
 ## 📂 Project Directory Structure
 
 ```text
@@ -107,6 +132,19 @@ OmniDoc-RAG/
 ├── create_db_zip.py            # Utility script to package ChromaDB into ZIP
 ├── .env.example                # Template for environment variables
 ├── .gitignore                  # Git exclusion rules
+│
+├── assets/                     # README showcase screenshots (new outputs)
+│   ├── ml-subject.png          # Machine Learning subject context view
+│   ├── dl-response.png         # Deep Learning exam-ready response
+│   └── chat-history.png        # Persistent chat history sidebar
+│
+├── docs/                       # Project documentation & visual assets
+│   └── screenshots/            # Full application screenshot set
+│       ├── home.png            # Main landing interface
+│       ├── workflow.png        # Interactive subject selection
+│       ├── result.png          # Streamed academic response (CN OSI model)
+│       ├── relevance-gate.png  # Anti-hallucination domain guard
+│       └── dashboard.png       # Settings & status modal
 │
 ├── frontend/                   # Production Web Client
 │   └── index.html              # Modern glassmorphism UI (HTML5, CSS3, Vanilla JS)
