@@ -1,7 +1,3 @@
-"""
-Chunking package for OmniDoc-RAG
-"""
+from .chunker import DocumentChunker,split_documents
 
-from .chunker import DocumentChunker, split_documents
-
-__all__ = ["DocumentChunker", "split_documents"]
+__all__=["DocumentChunker","split_documents"]
