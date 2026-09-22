@@ -1,7 +1,3 @@
-"""
-Utils package for OmniDoc-RAG
-"""
-
 from .helpers import (
     load_app_config,
     SUBJECT_METADATA,
@@ -14,10 +10,10 @@ from .helpers import (
     save_session,
     load_session,
     get_all_sessions,
-    delete_session,
+    delete_session
 )
 
-__all__ = [
+__all__=[
     "load_app_config",
     "SUBJECT_METADATA",
     "SIDEBAR_CATEGORIES",
@@ -29,5 +25,5 @@ __all__ = [
     "save_session",
     "load_session",
     "get_all_sessions",
-    "delete_session",
+    "delete_session"
 ]
