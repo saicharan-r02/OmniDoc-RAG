@@ -2,35 +2,27 @@ import os
 import gc
 import json
 import asyncio
-from typing import Optional, AsyncGenerator
+from typing import Optional,AsyncGenerator
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
 load_dotenv()
 
-# Strict single-thread memory limits for 512MB RAM cloud containers
 os.environ["OMP_NUM_THREADS"]="1"
 os.environ["MKL_NUM_THREADS"]="1"
 os.environ["TOKENIZERS_PARALLELISM"]="false"
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.responses import StreamingResponse,FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from src.retrieval.retriever import retrieve_context, is_context_relevant
 from src.llm.llm_client import stream_llm_response, ALL_GROQ_MODELS
 from src.vectordb.vector_store import get_subject_counts
-from src.utils.helpers import (
-    SUBJECT_METADATA,
-    SIDEBAR_CATEGORIES,
-    SUBJECT_SAMPLE_QUESTIONS,
-    get_groq_api_key,
-    normalize_subject_name,
-)
+from src.utils.helpers import SUBJECT_METADATA,SIDEBAR_CATEGORIES,SUBJECT_SAMPLE_QUESTIONS,get_groq_api_key,normalize_subject_name
 
-#  Pydantic Models 
 class ChatRequest(BaseModel):
     question: str =Field(..., min_length=1, max_length=4000)
     subject: str =Field(default="All Subjects")
@@ -38,7 +30,6 @@ class ChatRequest(BaseModel):
     engine: str =Field(default="Auto Cascading Pool")
     custom_api_key: Optional[str] =Field(default="")
 
-#  Lifespan 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Memory-safe startup for low-RAM cloud instances."""
@@ -52,7 +43,6 @@ async def lifespan(app: FastAPI):
     print("OmniDoc-RAG API ready.")
     yield
 
-#  App Initialization 
 app=FastAPI(
     title="OmniDoc-RAG API",
     description="Academic RAG Assistant — Production FastAPI Backend",
@@ -68,7 +58,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-#  Health Check 
 @app.get("/api/health",tags=["System"])
 async def health_check():
     """Returns system status and basic statistics."""
@@ -88,7 +77,6 @@ async def health_check():
         "available_models":ALL_GROQ_MODELS,
     }
 
-#  Subjects Endpoint 
 @app.get("/api/subjects",tags=["Subjects"])
 async def get_subjects():
     """Returns all subjects grouped by category."""
@@ -107,15 +95,12 @@ async def get_subjects():
         categories[cat_label]=subjects_in_cat
     return {"categories":categories}
 
-#  Chat Streaming Endpoint 
-
 @app.post("/api/chat",tags=["Chat"])
 async def chat_stream(req: ChatRequest,request: Request):
     """
     Streams token-by-token AI responses via Server-Sent Events (SSE).
     Uses server's configured GROQ_API_KEY or header/custom key.
     """
-    # Key precedence: request payload custom key -> X-Groq-Api-Key header -> server env
     header_key=request.headers.get("x-groq-api-key","").strip()
     active_key=req.custom_api_key.strip() or header_key or get_groq_api_key()
 
@@ -123,16 +108,13 @@ async def chat_stream(req: ChatRequest,request: Request):
         loop=asyncio.get_event_loop()
         normalized_subj=normalize_subject_name(req.subject) or "All Subjects"
 
-        # Start the SSE response immediately while model and database work runs.
         yield ": connected\n\n"
 
-        # Check API key before starting
         if not active_key:
             yield f"data: {json.dumps({'type':'token', 'content':'⚠️ **Groq API Key Required:** Please configure `GROQ_API_KEY` in your environment or Settings modal.'})}\n\n"
             yield f"data: {json.dumps({'type':'done'})}\n\n"
             return
 
-        # Step 1: Retrieve context
         retrieval_future=loop.run_in_executor(
             None,
             lambda: retrieve_context(query=req.question,subject_filter=normalized_subj)
@@ -150,7 +132,6 @@ async def chat_stream(req: ChatRequest,request: Request):
             yield f"data: {json.dumps({'type':'done'})}\n\n"
             return
 
-        # Step 2: Relevance gate
         is_relevant,fallback_msg=is_context_relevant(
             query=req.question,
             context=context,
@@ -162,14 +143,12 @@ async def chat_stream(req: ChatRequest,request: Request):
             yield f"data: {json.dumps({'type':'done'})}\n\n"
             return
 
-        # Step 3: Stream LLM response
         shifts = []
 
         def on_model_shift(current: str, next_model: str):
             shifts.append({"from":current,"to":next_model})
 
         def blocking_stream():
-            # Temporarily ensure active_key is accessible by llm_client
             if active_key and not os.getenv("GROQ_API_KEY"):
                 os.environ["GROQ_API_KEY"] = active_key
             return list(stream_llm_response(
@@ -213,7 +192,6 @@ async def chat_stream(req: ChatRequest,request: Request):
         }
     )
 
-#  Serve Frontend 
 frontend_path=os.path.join(os.path.dirname(__file__),"frontend")
 if os.path.exists(frontend_path):
     app.mount("/static",StaticFiles(directory=frontend_path),name="static")
