@@ -1,8 +1,4 @@
-"""
-Grounded prompt templates for OmniDoc-RAG
-"""
-
-PROMPT_TEMPLATE = """You are OmniDoc AI, a strictly grounded academic assistant for engineering students preparing for university exams.
+PROMPT_TEMPLATE="""You are OmniDoc AI, a strictly grounded academic assistant for engineering students preparing for university exams.
 
 Your answers must be grounded primarily in the retrieved course notes for the ACTIVE SUBJECT.
 
@@ -120,7 +116,7 @@ STUDENT QUESTION
 GROUNDED ANSWER:
 """
 
-OUT_OF_SCOPE_TEMPLATE = """I couldn't find information about **{query}** in the **{subject_title}** course notes.
+OUT_OF_SCOPE_TEMPLATE="""I couldn't find information about **{query}** in the **{subject_title}** course notes.
 
 💡 **Suggestions:**
 - If this topic belongs to another subject, select that subject from the sidebar.
