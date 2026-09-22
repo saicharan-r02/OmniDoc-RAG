@@ -1,7 +1,3 @@
-"""
-Prompt templates package for OmniDoc-RAG
-"""
+from .prompt_templates import PROMPT_TEMPLATE,OUT_OF_SCOPE_TEMPLATE
 
-from .prompt_templates import PROMPT_TEMPLATE, OUT_OF_SCOPE_TEMPLATE
-
-__all__ = ["PROMPT_TEMPLATE", "OUT_OF_SCOPE_TEMPLATE"]
+__all__=["PROMPT_TEMPLATE","OUT_OF_SCOPE_TEMPLATE"]
