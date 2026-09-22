@@ -1,13 +1,6 @@
-"""
-OmniDoc-RAG Application Entrypoint
-Allows starting the Streamlit application or executing the ingestion pipeline from CLI.
-"""
-
 import sys
 import os
 import argparse
-from src.utils.helpers import load_app_config
-
 
 def run_streamlit():
     """Launch the Streamlit web interface."""
@@ -16,14 +9,12 @@ def run_streamlit():
     print("🚀 Starting OmniDoc AI Streamlit Application...")
     subprocess.run(cmd)
 
-
 def run_ingestion(data_dir: str = "./PDF_Data", subject: str = None, rebuild: bool = False):
     """Run incremental or explicit safe rebuild ingestion into ChromaDB."""
     from src.ingestion.loader import process_directory_incrementally
     mode = "rebuild" if rebuild else "incremental"
     print(f"Starting {mode} ingestion from '{data_dir}'...")
     process_directory_incrementally(root_path=data_dir, subject_filter=subject, rebuild=rebuild)
-
 
 def main():
     parser = argparse.ArgumentParser(description="OmniDoc-RAG: Engineering Academic Assistant")
@@ -39,17 +30,16 @@ def main():
 
     args = parser.parse_args()
 
-    if args.mode == "app":
+    if args.mode=="app":
         run_streamlit()
-    elif args.mode == "ingest":
+    elif args.mode=="ingest":
         run_ingestion(args.data_dir, subject=args.subject, rebuild=args.rebuild)
-    elif args.mode == "test":
+    elif args.mode=="test":
         import unittest
-        loader = unittest.TestLoader()
-        suite = loader.discover("tests")
-        runner = unittest.TextTestRunner(verbosity=2)
+        loader=unittest.TestLoader()
+        suite=loader.discover("tests")
+        runner=unittest.TextTestRunner(verbosity=2)
         runner.run(suite)
 
-
-if __name__ == "__main__":
+if __name__=="__main__":
     main()
