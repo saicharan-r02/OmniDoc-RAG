@@ -1,97 +1,90 @@
 import os
 import json
 import time
-import re
-from typing import Dict, Any, List, Optional
+from typing import Dict,Any,List,Optional
 import yaml
 
-# Default configuration fallback
-DEFAULT_CONFIG = {
-    "app": {
-        "name": "OmniDoc AI",
-        "description": "Academic RAG Assistant for Engineering Students",
-        "version": "2.0.0"
+DEFAULT_CONFIG={
+    "app":{
+        "name":"OmniDoc AI",
+        "description":"Academic RAG Assistant for Engineering Students",
+        "version":"2.0.0"
     },
-    "database": {
-        "persist_directory": "./pdf_db/chromadb",
-        "collection_name": "Document__C",
-        "cloud_zip_path": "./PDF_db.zip"
+    "database":{
+        "persist_directory":"./pdf_db/chromadb",
+        "collection_name":"Document__C",
+        "cloud_zip_path":"./PDF_db.zip"
     },
-    "embeddings": {
-        "model_name": "all-MiniLM-L6-v2",
-        "device": "cpu"
+    "embeddings":{
+        "model_name":"all-MiniLM-L6-v2",
+        "device":"cpu"
     },
-    "chunking": {
-        "chunk_size": 1000,
-        "chunk_overlap": 200
+    "chunking":{
+        "chunk_size":1000,
+        "chunk_overlap":200
     },
-    "retrieval": {
-        "top_k": 8,
-        "min_context_length": 60,
-        "keyword_min_length": 4,
-        "relevance_threshold": 0.25
+    "retrieval":{
+        "top_k":8,
+        "min_context_length":60,
+        "keyword_min_length":4,
+        "relevance_threshold":0.25
     },
-    "llm": {
-        "default_groq_model": "openai/gpt-oss-120b",
-        "fast_groq_model": "openai/gpt-oss-20b",
-        "mini_groq_model": "groq/compound-mini",
-        "default_ollama_model": "llama3.2:latest",
-        "temperature": 0.0
+    "llm":{
+        "default_groq_model":"openai/gpt-oss-120b",
+        "fast_groq_model":"openai/gpt-oss-20b",
+        "mini_groq_model":"groq/compound-mini",
+        "default_ollama_model":"llama3.2:latest",
+        "temperature":0.0
     },
     "paths": {
-        "data_dir": "./PDF_Data",
-        "chat_sessions_dir": "./chat_history_sessions",
-        "logs_dir": "./logs"
+        "data_dir":"./PDF_Data",
+        "chat_sessions_dir":"./chat_history_sessions",
+        "logs_dir":"./logs"
     }
 }
-
 
 def normalize_subject_name(subject: Optional[str]) -> Optional[str]:
     """Return the canonical database subject key regardless of case, title or alias."""
     if subject is None:
         return None
 
-    raw = subject.strip()
+    raw=subject.strip()
     if not raw:
         return raw
-    if raw.lower() in ("all subjects", "all", "global"):
+    if raw.lower() in ("all subjects","all","global"):
         return "All Subjects"
 
-    # 1. Exact match on database key
     for canonical in SUBJECT_METADATA.keys():
-        if canonical.lower() == raw.lower():
+        if canonical.lower()==raw.lower():
             return canonical
 
-    # 2. Match on human-readable title
-    for key, meta in SUBJECT_METADATA.items():
-        title = meta.get("title", "")
-        if title.lower() == raw.lower():
+    for key,meta in SUBJECT_METADATA.items():
+        title=meta.get("title","")
+        if title.lower()==raw.lower():
             return key
-        if title.lower().replace("&", "and") == raw.lower().replace("&", "and"):
+        if title.lower().replace("&","and")==raw.lower().replace("&","and"):
             return key
 
-    # 3. Match on abbreviations / aliases
-    for abbrev, canonical in SUBJECT_ABBREV.items():
-        if abbrev.lower() == raw.lower():
+    for abbrev,canonical in SUBJECT_ABBREV.items():
+        if abbrev.lower()==raw.lower():
             return canonical
 
     return raw
 
-
-def load_app_config(config_path: str = "./config.yaml") -> Dict[str, Any]:
+def load_app_config(config_path: str="./config.yaml") -> Dict[str, Any]:
     """Load configuration from YAML file with fallback to defaults."""
     if os.path.exists(config_path):
         try:
-            with open(config_path, "r", encoding="utf-8") as f:
-                cfg = yaml.safe_load(f)
-                if isinstance(cfg, dict):
+            with open(config_path,"r",encoding="utf-8") as f:
+                cfg=yaml.safe_load(f)
+                if isinstance(cfg,dict):
                     return cfg
         except Exception as e:
             print(f"Warning: Failed to parse config.yaml ({e}). Using defaults.")
     return DEFAULT_CONFIG
 
 
-def get_groq_api_key(streamlit_context: bool = True) -> str:
+def get_groq_api_key(streamlit_context: bool=True) -> str:
     """Fetch Groq API key from Streamlit secrets or environment variables."""
     if streamlit_context:
         try:
@@ -100,10 +93,9 @@ def get_groq_api_key(streamlit_context: bool = True) -> str:
                 return st.secrets["GROQ_API_KEY"]
         except Exception:
             pass
-    return os.getenv("GROQ_API_KEY", "").strip()
+    return os.getenv("GROQ_API_KEY","").strip()
 
 
-# SUBJECT METADATA & SIDEBAR CATEGORIES
 SUBJECT_METADATA = {
     "AI": {"title": "Artificial Intelligence", "category": "AI & Data Science", "icon": "🤖", "type": "Notes"},
     "AI-NLP Lab": {"title": "AI & NLP Lab", "category": "AI & Data Science", "icon": "🧪", "type": "Lab"},
@@ -209,7 +201,6 @@ SUBJECT_SAMPLE_QUESTIONS = {
     "All Subjects": ["What is Computer Networks?", "Give AI lab list of experiments", "Explain normalization in DBMS", "What are types of Machine Learning?"]
 }
 
-# Used only when scanned subject notes have no readable OCR text for a subject-level query.
 SUBJECT_SCOPE_CONTEXT = {
     "MSF": (
         "Subject scope: Management Science and Finance. Management science applies "
@@ -224,7 +215,6 @@ SUBJECT_SCOPE_CONTEXT = {
     ),
 }
 
-# Intra-subject specific abbreviations
 SUBJECT_ABBREV = {
     "STM Notes": {
         "cfg": "Control Flow Graph", "cn": "Control Flow Graph (CFG)",
@@ -307,7 +297,6 @@ SUBJECT_ABBREV = {
     }
 }
 
-# Cross-subject shorthand map: shorthand -> Full subject title
 SUBJECT_NAME_ABBREV = {
     "cn": "Computer Networks",
     "cns": "Cryptography and Network Security",
@@ -338,69 +327,59 @@ SUBJECT_NAME_ABBREV = {
 
 def is_short_query(query: str) -> bool:
     """Returns True if the query is a single abbreviation or very short query (<= 3 words)."""
-    words = query.strip().split()
-    return len(words) <= 3 or (len(words) <= 5 and all(len(w) <= 5 for w in words))
+    words=query.strip().split()
+    return len(words)<=3 or (len(words)<=5 and all(len(w)<=5 for w in words))
 
 
-# SESSION MANAGEMENT HELPERS
-def _session_path(session_id: str, sessions_dir: str = "./chat_history_sessions") -> str:
-    os.makedirs(sessions_dir, exist_ok=True)
-    return os.path.join(sessions_dir, f"{session_id}.json")
+def _session_path(session_id: str,sessions_dir: str="./chat_history_sessions") -> str:
+    os.makedirs(sessions_dir,exist_ok=True)
+    return os.path.join(sessions_dir,f"{session_id}.json")
 
-
-def get_all_sessions(sessions_dir: str = "./chat_history_sessions") -> List[Dict[str, Any]]:
+def get_all_sessions(sessions_dir: str="./chat_history_sessions") -> List[Dict[str,Any]]:
     """Retrieve all saved chat sessions sorted by timestamp."""
-    os.makedirs(sessions_dir, exist_ok=True)
-    sessions = []
+    os.makedirs(sessions_dir,exist_ok=True)
+    sessions=[]
     for fname in os.listdir(sessions_dir):
         if fname.endswith(".json"):
             try:
-                with open(os.path.join(sessions_dir, fname), "r", encoding="utf-8") as f:
+                with open(os.path.join(sessions_dir,fname),"r",encoding="utf-8") as f:
                     sessions.append(json.load(f))
             except Exception:
                 pass
-    sessions.sort(key=lambda x: x.get("timestamp", 0), reverse=True)
+    sessions.sort(key=lambda x: x.get("timestamp",0),reverse=True)
     return sessions
 
-
-def load_session(session_id: str, sessions_dir: str = "./chat_history_sessions") -> Optional[Dict[str, Any]]:
+def load_session(session_id: str,sessions_dir: str ="./chat_history_sessions") -> Optional[Dict[str, Any]]:
     """Load a specific chat session by session_id."""
-    p = _session_path(session_id, sessions_dir)
+    p=_session_path(session_id,sessions_dir)
     if os.path.exists(p):
         try:
-            with open(p, "r", encoding="utf-8") as f:
+            with open(p,"r",encoding="utf-8") as f:
                 return json.load(f)
         except Exception:
             return None
     return None
 
 
-def save_session(
-    session_id: str,
-    title: str,
-    messages: List[Dict[str, Any]],
-    subject: str = "All Subjects",
-    sessions_dir: str = "./chat_history_sessions"
-):
+def save_session(session_id: str,title: str,messages: List[Dict[str,Any]],subject: str="All Subjects",sessions_dir: str="./chat_history_sessions"):
     """Save or update a chat session to JSON file."""
-    data = {
-        "session_id": session_id,
-        "title": title,
-        "subject": subject,
-        "messages": messages,
-        "timestamp": time.time()
+    data={
+        "session_id":session_id,
+        "title":title,
+        "subject":subject,
+        "messages":messages,
+        "timestamp":time.time()
     }
-    p = _session_path(session_id, sessions_dir)
+    p=_session_path(session_id,sessions_dir)
     try:
-        with open(p, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+        with open(p,"w",encoding="utf-8") as f:
+            json.dump(data,f,ensure_ascii=False,indent=2)
     except Exception as e:
         print(f"Error saving session {session_id}: {e}")
 
-
-def delete_session(session_id: str, sessions_dir: str = "./chat_history_sessions"):
+def delete_session(session_id: str,sessions_dir: str="./chat_history_sessions"):
     """Delete a session file by ID."""
-    p = _session_path(session_id, sessions_dir)
+    p=_session_path(session_id,sessions_dir)
     if os.path.exists(p):
         try:
             os.remove(p)
