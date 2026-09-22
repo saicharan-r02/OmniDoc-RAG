@@ -1,18 +1,12 @@
-import os
 import uuid
 import streamlit as st
 from dotenv import load_dotenv
-
-# Load environment variables
 load_dotenv()
+from src.utils.helpers import get_groq_api_key,SUBJECT_METADATA,SIDEBAR_CATEGORIES,SUBJECT_SAMPLE_QUESTIONS,get_all_sessions,save_session,delete_session
+from src.vectordb.vector_store import get_subject_counts
+from src.retrieval.retriever import retrieve_context,is_context_relevant
+from src.llm.llm_client import get_local_ollama_models,is_ollama_online,stream_llm_response
 
-# Import clean architecture modules from src
-from src.utils.helpers import (load_app_config,get_groq_api_key,SUBJECT_METADATA,SIDEBAR_CATEGORIES,SUBJECT_SAMPLE_QUESTIONS,get_all_sessions,save_session,delete_session)
-from src.vectordb.vector_store import get_vector_store, get_subject_counts
-from src.retrieval.retriever import retrieve_context, is_context_relevant
-from src.llm.llm_client import get_local_ollama_models, is_ollama_online, stream_llm_response
-
-# 1. PAGE CONFIGURATION & STYLING
 st.set_page_config(
     page_title="OmniDoc AI",
     page_icon="✨",
@@ -86,7 +80,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# 2. SESSION STATE INITIALIZATION
 def init_session_state():
     if "active_session_id" not in st.session_state:
         st.session_state.active_session_id=uuid.uuid4().hex[:8]
@@ -109,7 +102,6 @@ def switch_subject(new_subject: str):
     st.session_state.session_title="New Chat"
     st.session_state.prompt_input=None
 
-# 3. SIDEBAR NAVIGATION
 with st.sidebar:
     st.markdown("### 📚 **OmniDoc AI**")
     st.caption("Grounded Academic Assistant for Engineering Students")
@@ -131,14 +123,12 @@ with st.sidebar:
     st.markdown("**Select Subject**")
     cur_subj=st.session_state.selected_subject
 
-    # Global All Subjects button
     btn_type="primary" if cur_subj=="All Subjects" else "secondary"
     if st.button("🌐 All Subjects",use_container_width=True,type=btn_type,key="btn_all"):
         if cur_subj!="All Subjects":
             switch_subject("All Subjects")
             st.rerun()
 
-    # Per-category subject buttons
     for cat_name, subjects in SIDEBAR_CATEGORIES.items():
         st.markdown(f"<div class='sidebar-cat'>{cat_name}</div>", unsafe_allow_html=True)
         for subj in subjects:
@@ -158,7 +148,6 @@ with st.sidebar:
                     st.rerun()
     st.divider()
 
-    # Chat History
     st.markdown("**💬 Chat History**")
     saved_sessions=get_all_sessions()
     if saved_sessions:
@@ -191,7 +180,6 @@ with st.sidebar:
 
     st.divider()
 
-    # AI Engine Selection
     st.markdown("**🧠 AI Engine**")
     groq_api_key = get_groq_api_key()
     ollama_online = is_ollama_online()
@@ -221,7 +209,6 @@ with st.sidebar:
             selected_ollama_model = st.selectbox("Local Model", local_models, index=0)
 
 
-# 4. MAIN CHAT AREA
 cur_subj=st.session_state.selected_subject
 subj_meta=SUBJECT_METADATA.get(cur_subj,{"title": cur_subj if cur_subj!="All Subjects" else "All Subjects","icon": "🌐","type": "General"})
 subj_icon=subj_meta.get("icon","📚")
@@ -235,13 +222,11 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Render conversation history
 for msg in st.session_state.messages:
     avatar="👤" if msg["role"]=="user" else "✨"
     with st.chat_message(msg["role"], avatar=avatar):
         st.markdown(msg["content"])
 
-# Empty chat suggestions
 if len(st.session_state.messages) == 0:
     st.markdown(f"### 💡 Studying **{subj_title}**")
     if cur_subj!="All Subjects":
@@ -260,7 +245,6 @@ if len(st.session_state.messages) == 0:
             st.session_state.prompt_input=q
             st.rerun()
 
-# 5. INPUT & STREAMING GENERATION
 input_text=st.session_state.pop("prompt_input",None)
 user_query=st.chat_input(f"Ask anything about {subj_title}...") or input_text
 
@@ -280,7 +264,6 @@ if user_query:
             with st.spinner("Searching course notes..."):
                 context_str=retrieve_context(user_query,subject_filter=cur_subj,k=8)
 
-            # Pre-LLM Relevance & Anti-Hallucination Gate
             is_relevant,out_of_scope_msg=is_context_relevant(
                 query=user_query,
                 context=context_str,
@@ -288,14 +271,13 @@ if user_query:
             )
 
             if not is_relevant:
-                # Direct grounded response — preventing LLM hallucination
                 st.markdown(out_of_scope_msg)
                 st.session_state.messages.append({"role": "assistant","content": out_of_scope_msg})
                 save_session(
                     st.session_state.active_session_id,
                     st.session_state.session_title,
                     st.session_state.messages,
-                    subject=cur_subj,
+                    subject=cur_subj
                 )
             else:
                 response_container=st.empty()
@@ -304,7 +286,6 @@ if user_query:
                 def handle_fallback(current_model: str, next_model: str):
                     st.caption(f"⚡ *Limit reached on `{current_model}` ➡️ automatically shifted to `{next_model}`.*")
 
-                # Stream response through unified client (handles connection safety internally)
                 for chunk in stream_llm_response(
                     active_subject=cur_subj,
                     context=context_str,
@@ -323,7 +304,7 @@ if user_query:
                     st.session_state.active_session_id,
                     st.session_state.session_title,
                     st.session_state.messages,
-                    subject=cur_subj,
+                    subject=cur_subj
                 )
 
         except Exception as e:
