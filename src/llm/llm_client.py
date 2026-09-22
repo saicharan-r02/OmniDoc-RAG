@@ -1,6 +1,5 @@
-import os
 import socket
-from typing import List, Generator, Dict, Any, Optional, Callable
+from typing import List,Generator,Any,Optional,Callable
 import ollama
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_ollama import ChatOllama
@@ -8,13 +7,12 @@ try:
     from langchain_groq import ChatGroq
     from groq import Groq
 except ImportError:
-    ChatGroq = None
-    Groq = None
+    ChatGroq=None
+    Groq=None
 
 from src.prompts.prompt_templates import PROMPT_TEMPLATE
-from src.utils.helpers import load_app_config, get_groq_api_key
+from src.utils.helpers import load_app_config,get_groq_api_key
 
-# Complete list of Groq models (ordered by reliability & capability)
 ALL_GROQ_MODELS = [
     "openai/gpt-oss-120b",
     "qwen/qwen3.6-27b",
@@ -24,34 +22,33 @@ ALL_GROQ_MODELS = [
     "allam-2-7b",
     "meta-llama/llama-4-scout-17b-16e-instruct",
     "llama-3.3-70b-versatile",
-    "llama-3.1-8b-instant",
+    "llama-3.1-8b-instant"
 ]
 
 
-def is_ollama_online(host: str = "127.0.0.1", port: int = 11434, timeout: float = 0.5) -> bool:
+def is_ollama_online(host: str="127.0.0.1",port: int=11434,timeout: float=0.5) -> bool:
     """Quick socket check to verify if the local Ollama server is running."""
     try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         sock.settimeout(timeout)
-        result = sock.connect_ex((host, port))
+        result=sock.connect_ex((host,port))
         sock.close()
-        return result == 0
+        return result==0
     except Exception:
         return False
 
-
-def get_available_groq_models(api_key: Optional[str] = None) -> List[str]:
+def get_available_groq_models(api_key: Optional[str] =None) -> List[str]:
     """Fetch all available chat models from the user's Groq account."""
-    key = api_key or get_groq_api_key()
+    key=api_key or get_groq_api_key()
     if not key or not Groq:
         return ALL_GROQ_MODELS
 
     try:
-        client = Groq(api_key=key)
-        all_models = client.models.list()
-        chat_models = []
+        client=Groq(api_key=key)
+        all_models=client.models.list()
+        chat_models=[]
         for m in all_models.data:
-            mid = m.id
+            mid=m.id
             if "whisper" not in mid and "guard" not in mid and "orpheus" not in mid:
                 chat_models.append(mid)
         if chat_models:
@@ -64,13 +61,13 @@ def get_available_groq_models(api_key: Optional[str] = None) -> List[str]:
 
 def _is_model_unavailable_error(error: Exception) -> bool:
     """Return whether Groq rejected a model because it is missing or inaccessible."""
-    message = str(error).lower()
+    message=str(error).lower()
     return "404" in message or "model_not_found" in message or "does not exist" in message
 
 
 def _is_rate_limit_error(error: Exception) -> bool:
     """Return whether Groq asked the client to retry later."""
-    message = str(error).lower()
+    message=str(error).lower()
     return "429" in message or "rate limit" in message or "rate_limit" in message
 
 
@@ -79,37 +76,29 @@ def get_local_ollama_models() -> List[str]:
     if not is_ollama_online():
         return []
     try:
-        models_list = ollama.list().get("models", [])
-        names = [m.get("name") or m.get("model") for m in models_list if m]
+        models_list=ollama.list().get("models",[])
+        names=[m.get("name") or m.get("model") for m in models_list if m]
         if names:
             return names
     except Exception:
         pass
-    return ["llama3.2:latest", "qwen2.5:7b", "llama3.1:8b", "mistral:7b"]
+    return ["llama3.2:latest","qwen2.5:7b","llama3.1:8b","mistral:7b"]
 
-
-def create_groq_client(
-    model_name: str = "openai/gpt-oss-120b",
-    api_key: Optional[str] = None,
-    temperature: float = 0.0
-) -> Optional[Any]:
+def create_groq_client(model_name: str="openai/gpt-oss-120b",api_key: Optional[str]=None,temperature: float=0.0) -> Optional[Any]:
     """Create a LangChain ChatGroq instance."""
     if not ChatGroq:
         return None
-    key = api_key or get_groq_api_key()
+    key=api_key or get_groq_api_key()
     if not key:
         return None
-    return ChatGroq(model=model_name, groq_api_key=key, temperature=temperature)
+    return ChatGroq(model=model_name,groq_api_key=key,temperature=temperature)
 
 
-def create_ollama_client(
-    model_name: str = "llama3.2:latest",
-    temperature: float = 0.0
-) -> Optional[ChatOllama]:
+def create_ollama_client(model_name: str = "llama3.2:latest",temperature: float = 0.0) -> Optional[ChatOllama]:
     """Create a LangChain ChatOllama instance if server is online."""
     if not is_ollama_online():
         return None
-    return ChatOllama(model=model_name, temperature=temperature)
+    return ChatOllama(model=model_name,temperature=temperature)
 
 
 def _extract_selected_groq_model(selected_engine: str) -> Optional[str]:
@@ -134,26 +123,19 @@ def stream_llm_response(
     When a Groq model completes its limit (RateLimit, 429, TPM/RPM cap) or 404,
     it automatically shifts to the next model in the pool until success.
     """
-    cfg = load_app_config()
-    temp = cfg.get("llm", {}).get("temperature", 0.0)
-    prompt = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
+    cfg=load_app_config()
+    temp=cfg.get("llm", {}).get("temperature", 0.0)
+    prompt=ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
 
-    input_payload = {
-        "active_subject": active_subject,
-        "context": context,
-        "chat_history": chat_history,
-        "question": question,
-    }
+    input_payload = {"active_subject": active_subject,"context": context,"chat_history": chat_history,"question": question}
 
-    groq_api_key = get_groq_api_key()
-    last_groq_error = ""
-    unavailable_models = []
-    rate_limited_models = []
+    groq_api_key=get_groq_api_key()
+    last_groq_error=""
+    unavailable_models=[]
+    rate_limited_models=[]
 
-    # Check if explicit local Ollama was chosen without Auto
-    is_pure_ollama = ("Ollama" in selected_engine) and ("Auto" not in selected_engine)
+    is_pure_ollama=("Ollama" in selected_engine) and ("Auto" not in selected_engine)
 
-    # 1. ATTEMPT GROQ CLOUD (Default for all Cloud models and Auto Cascading Pool)
     if not is_pure_ollama:
         if not groq_api_key:
             yield (
@@ -168,39 +150,33 @@ def stream_llm_response(
             yield "⚠️ **Error:** `langchain-groq` package is not installed."
             return
 
-        # Build an ordered queue from models actually enabled for this API key.
-        explicit_model = _extract_selected_groq_model(selected_engine)
-        discovered_models = get_available_groq_models(groq_api_key)
+        explicit_model=_extract_selected_groq_model(selected_engine)
+        discovered_models=get_available_groq_models(groq_api_key)
         if discovered_models:
-            preferred_models = [m for m in ALL_GROQ_MODELS if m in discovered_models]
-            additional_models = [m for m in discovered_models if m not in preferred_models]
-            model_queue = preferred_models + additional_models
+            preferred_models=[m for m in ALL_GROQ_MODELS if m in discovered_models]
+            additional_models=[m for m in discovered_models if m not in preferred_models]
+            model_queue=preferred_models+additional_models
         else:
-            model_queue = [
-                "openai/gpt-oss-120b",
-                "openai/gpt-oss-20b",
-                "llama-3.3-70b-versatile",
-            ]
+            model_queue = ["openai/gpt-oss-120b","openai/gpt-oss-20b","llama-3.3-70b-versatile"]
 
         if explicit_model and explicit_model in model_queue:
             model_queue.remove(explicit_model)
-            model_queue.insert(0, explicit_model)
+            model_queue.insert(0,explicit_model)
 
         for idx, g_model in enumerate(model_queue):
             try:
-                llm_groq = ChatGroq(
+                llm_groq=ChatGroq(
                     model=g_model,
                     groq_api_key=groq_api_key,
                     temperature=temp,
                     max_tokens=8192,
                     max_retries=1
                 )
-                chain_groq = prompt | llm_groq
+                chain_groq=prompt | llm_groq
 
-                # Stream response chunks
-                chunk_received = False
+                chunk_received=False
                 for chunk in chain_groq.stream(input_payload):
-                    piece = chunk.content if hasattr(chunk, "content") else str(chunk)
+                    piece=chunk.content if hasattr(chunk,"content") else str(chunk)
                     if piece:
                         chunk_received = True
                         yield piece
@@ -214,33 +190,29 @@ def stream_llm_response(
                     unavailable_models.append(g_model)
                 elif _is_rate_limit_error(groq_err):
                     rate_limited_models.append(g_model)
-                next_model = model_queue[idx + 1] if idx + 1 < len(model_queue) else "Local Ollama"
+                next_model=model_queue[idx+1] if idx+1<len(model_queue) else "Local Ollama"
 
-                # Notify UI about automatic shift to next model
                 if on_fallback:
                     try:
-                        on_fallback(g_model, next_model)
+                        on_fallback(g_model,next_model)
                     except Exception:
                         pass
 
-                # Try the next model in the cascade pool
                 continue
 
-    # 2. ATTEMPT LOCAL OLLAMA (If explicitly chosen, or if all 9 Groq models exhausted)
     if is_ollama_online():
         try:
-            llm_ollama = ChatOllama(model=local_model, temperature=temp)
-            chain_ollama = prompt | llm_ollama
+            llm_ollama=ChatOllama(model=local_model,temperature=temp)
+            chain_ollama=prompt|llm_ollama
 
             for chunk in chain_ollama.stream(input_payload):
-                piece = chunk.content if hasattr(chunk, "content") else str(chunk)
+                piece=chunk.content if hasattr(chunk,"content") else str(chunk)
                 yield piece
             return
         except Exception as ollama_err:
             yield f"⚠️ **Local Ollama Error:** {ollama_err}\n\nPlease ensure model `{local_model}` is pulled (`ollama pull {local_model}`)."
             return
 
-    # 3. IF PURE OLLAMA WAS CHOSEN BUT OLLAMA IS NOT ONLINE
     if is_pure_ollama:
         yield (
             "⚠️ **Local Ollama Not Running**\n\n"
@@ -250,7 +222,6 @@ def stream_llm_response(
         )
         return
 
-    # 4. Groq exhausted and Ollama offline
     if rate_limited_models and not unavailable_models:
         yield (
             f"⚠️ **Groq Rate Limit Reached**\n\n`{last_groq_error}`\n\n"
