@@ -1,16 +1,8 @@
 import re
-from typing import List, Tuple, Optional, Set
+from typing import List,Tuple,Optional,Set
 from src.vectordb.vector_store import get_vector_store
 from src.prompts.prompt_templates import OUT_OF_SCOPE_TEMPLATE
-from src.utils.helpers import (
-    load_app_config,
-    SUBJECT_ABBREV,
-    SUBJECT_NAME_ABBREV,
-    SUBJECT_METADATA,
-    SUBJECT_SCOPE_CONTEXT,
-    is_short_query,
-    normalize_subject_name,
-)
+from src.utils.helpers import SUBJECT_ABBREV,SUBJECT_NAME_ABBREV,SUBJECT_METADATA,SUBJECT_SCOPE_CONTEXT,is_short_query,normalize_subject_name
 
 
 def _subject_scope_fallback(subject: str) -> str:
@@ -18,9 +10,9 @@ def _subject_scope_fallback(subject: str) -> str:
     if subject in SUBJECT_SCOPE_CONTEXT:
         return SUBJECT_SCOPE_CONTEXT[subject]
 
-    metadata = SUBJECT_METADATA.get(subject, {})
-    title = metadata.get("title", subject)
-    kind = metadata.get("type", "course")
+    metadata=SUBJECT_METADATA.get(subject, {})
+    title=metadata.get("title",subject)
+    kind=metadata.get("type","course")
     return (
         f"Selected subject scope: {title}. This is the {kind.lower()} collection "
         "selected by the student. Use the subject title as the topic boundary and "
@@ -28,38 +20,35 @@ def _subject_scope_fallback(subject: str) -> str:
     )
 
 
-def expand_query(query: str, active_subject: str = "All Subjects") -> str:
+def expand_query(query: str,active_subject: str="All Subjects") -> str:
     """
     Intelligently expands student queries using active-subject context without cross-polluting.
     Handles subject-specific abbreviations, common typos, and subject/lab overview questions.
     """
-    active_subject = normalize_subject_name(active_subject) or "All Subjects"
-    raw = query.strip()
-    cleaned = raw.lower()
+    active_subject=normalize_subject_name(active_subject) or "All Subjects"
+    raw=query.strip()
+    cleaned=raw.lower()
 
-    # 1. Common typo corrections
-    typos = {
+    typos={
         "regreesion": "regression",
         "algorithem": "algorithm",
         "dimentionality": "dimensionality",
         "supervized": "supervised",
         "unsupervized": "unsupervised",
-        "classifcation": "classification",
+        "classifcation": "classification"
     }
     for wrong, right in typos.items():
-        cleaned = cleaned.replace(wrong, right)
+        cleaned=cleaned.replace(wrong,right)
 
-    if active_subject in {"CN Notes", "CN Lab"} and re.search(r"\b(tcp/?ip|tcp ip)\b", cleaned):
+    if active_subject in {"CN Notes","CN Lab"} and re.search(r"\b(tcp/?ip|tcp ip)\b",cleaned):
         return f"{raw} TCP/IP model application transport internet network access layers protocols"
 
-    # 2. Check active subject's internal abbreviation dictionary first
-    subj_abbrevs = SUBJECT_ABBREV.get(active_subject, {})
-    for word in re.findall(r'\b[a-zA-Z0-9*]+\b', cleaned):
+    subj_abbrevs=SUBJECT_ABBREV.get(active_subject,{})
+    for word in re.findall(r'\b[a-zA-Z0-9*]+\b',cleaned):
         if word in subj_abbrevs:
-            expansion = subj_abbrevs[word]
+            expansion=subj_abbrevs[word]
             return f"{raw} ({expansion})"
 
-    # 3. Subject-level direct question overrides
     subject_direct_overrides = {
         ("MSF", ("msf", "management science", "what is management science", "define management science")):
             "Management Science and Finance management science decision making operations research financial management",
@@ -99,58 +88,53 @@ def expand_query(query: str, active_subject: str = "All Subjects") -> str:
             "Java Programming lab experiments programs multithreading socket file handling",
     }
 
-    for (target_subj, triggers), expanded_text in subject_direct_overrides.items():
-        if active_subject == target_subj:
+    for (target_subj,triggers),expanded_text in subject_direct_overrides.items():
+        if active_subject==target_subj:
             for trigger in triggers:
-                if trigger == cleaned or trigger in cleaned:
+                if trigger==cleaned or trigger in cleaned:
                     return expanded_text
 
-        # Common curriculum concepts need explicit aliases because students often omit
-        # the full phrase used in the notes (for example, "7 layers" instead of OSI).
-        if active_subject in {"CN Notes", "CN Lab"}:
-            if re.search(r"\b(osi|seven layers|7 layers|osi model)\b", cleaned):
+        if active_subject in {"CN Notes","CN Lab"}:
+            if re.search(r"\b(osi|seven layers|7 layers|osi model)\b",cleaned):
                 return (
                     f"{raw} Open Systems Interconnection OSI model seven layers "
                     "Application Presentation Session Transport Network Data Link Physical"
                 )
-    subject_title = SUBJECT_METADATA.get(active_subject, {}).get("title", active_subject)
-    if active_subject != "All Subjects" and re.search(
-        r"\b(what is|define|explain|list|experiments|programs|overview)\b", cleaned
+    subject_title=SUBJECT_METADATA.get(active_subject,{}).get("title",active_subject)
+    if active_subject!="All Subjects" and re.search(
+        r"\b(what is|define|explain|list|experiments|programs|overview)\b",cleaned
     ):
         return f"{raw} {subject_title}"
 
-    # 4. If in "All Subjects" mode or global search, check cross-subject abbreviations
-    if active_subject == "All Subjects":
+    if active_subject=="All Subjects":
         for word in cleaned.split():
             if word in SUBJECT_NAME_ABBREV:
-                full_name = SUBJECT_NAME_ABBREV[word]
+                full_name=SUBJECT_NAME_ABBREV[word]
                 return f"{raw} ({full_name})"
 
     return raw
-
 
 def get_related_subjects(subject: str) -> List[str]:
     """
     Returns related subject labels for multi-collection/subject retrieval filtering.
     For instance, linking Lab and Theory notes together.
     """
-    subject = normalize_subject_name(subject)
-    if not subject or subject == "All Subjects":
+    subject=normalize_subject_name(subject)
+    if not subject or subject=="All Subjects":
         return []
 
-    related = [subject]
+    related=[subject]
     if "Notes" in subject:
-        related.append(subject.replace("Notes", "Lab").strip())
+        related.append(subject.replace("Notes","Lab").strip())
     elif "Lab" in subject:
-        related.append(subject.replace("Lab", "Notes").strip())
+        related.append(subject.replace("Lab","Notes").strip())
 
-    # Curricular pairings
     curriculum_links = {
-        "AI": ["AI-NLP Lab", "NLP", "ML notes"],
-        "AI-NLP Lab": ["AI", "NLP"],
-        "ML notes": ["ML Lab", "Neural network and deep learning", "AI"],
-        "ML Lab": ["ML notes", "Neural network and deep learning"],
-        "Neural network and deep learning": ["ML notes", "ML Lab", "Reinforcement Learning"],
+        "AI": ["AI-NLP Lab","NLP","ML notes"],
+        "AI-NLP Lab": ["AI","NLP"],
+        "ML notes": ["ML Lab","Neural network and deep learning","AI"],
+        "ML Lab": ["ML notes","Neural network and deep learning"],
+        "Neural network and deep learning": ["ML notes","ML Lab","Reinforcement Learning"],
         "Reinforcement Learning": ["Neural network and deep learning", "ML notes"],
         "NLP": ["AI", "AI-NLP Lab"],
         "DBMS": ["DBMS Lab"],
@@ -185,36 +169,31 @@ def is_garbled_ocr(text: str) -> bool:
     """
     if not text:
         return True
-    cleaned = text.strip()
+    cleaned=text.strip()
 
-    # 1. Single char or tiny chunks (page numbers, stray marks)
-    if len(cleaned) < 30:
+    if len(cleaned)<30:
         return True
 
-    # 2. Unicode replacement char indicates broken OCR scan
-    if cleaned.count('\ufffd') > 2:
+    if cleaned.count('\ufffd')>2:
         return True
 
-    # 3. Low alphanumeric ratio
-    alpha_chars = sum(c.isalnum() or c.isspace() for c in cleaned)
-    ratio = alpha_chars / max(len(cleaned), 1)
-    if ratio < 0.60:
+    alpha_chars=sum(c.isalnum() or c.isspace() for c in cleaned)
+    ratio=alpha_chars/max(len(cleaned),1)
+    if ratio<0.60:
         return True
 
-    # 4. Very low real word density (garbled OCR has many non-word tokens)
-    tokens = cleaned.split()
-    if len(tokens) < 5:
+    tokens=cleaned.split()
+    if len(tokens)<5:
         return True
-    # Real word = at least 3 consecutive alphabetic chars
-    real_words = sum(1 for t in tokens if sum(c.isalpha() for c in t) >= 3)
-    word_ratio = real_words / max(len(tokens), 1)
-    if word_ratio < 0.35:
+    real_words=sum(1 for t in tokens if sum(c.isalpha() for c in t)>=3)
+    word_ratio=real_words / max(len(tokens),1)
+    if word_ratio<0.35:
         return True
 
     return False
 
 
-def retrieve_context(query: str, subject_filter: str = "All Subjects", k: int = 12) -> str:
+def retrieve_context(query: str,subject_filter: str="All Subjects",k: int=12) -> str:
     """
     Robust Hybrid RAG Retrieval:
     1. Expands query within active subject context.
@@ -222,55 +201,52 @@ def retrieve_context(query: str, subject_filter: str = "All Subjects", k: int = 
     3. For multi-word/long queries (>= 4 chars), performs exact keyword filtering.
     4. Filters out garbled OCR noise and deduplicates chunks.
     """
-    subject_filter = normalize_subject_name(subject_filter) or "All Subjects"
+    subject_filter=normalize_subject_name(subject_filter) or "All Subjects"
     if re.search(
         r"\b(all|each|every|complete|entire|step[- ]by[- ]step|experiments?)\b",
-        query.lower(),
+        query.lower()
     ):
-        k = max(k, 24)
-    search_query = expand_query(query, active_subject=subject_filter)
-    raw_query = query.strip()
-    db_manager = get_vector_store()
+        k=max(k,24)
+    search_query=expand_query(query,active_subject=subject_filter)
+    raw_query=query.strip()
+    db_manager=get_vector_store()
 
-    # Prepare subject filter where clause
-    where_clause = None
-    if subject_filter and subject_filter != "All Subjects":
-        targets = get_related_subjects(subject_filter)
-        # Lab lists must stay in the lab collection instead of returning theory chunks.
-        is_lab_subject = SUBJECT_METADATA.get(subject_filter, {}).get("type") == "Lab"
+    where_clause=None
+    if subject_filter and subject_filter!="All Subjects":
+        targets=get_related_subjects(subject_filter)
+
+        is_lab_subject=SUBJECT_METADATA.get(subject_filter,{}).get("type")=="Lab"
         if is_lab_subject and re.search(r"\b(list|experiment|experiments|programs|practical)\b", query.lower()):
-            targets = [subject_filter]
-        if len(targets) == 1:
-            where_clause = {"subject": targets[0]}
-        elif len(targets) > 1:
-            where_clause = {"subject": {"$in": targets}}
+            targets=[subject_filter]
+        if len(targets)==1:
+            where_clause={"subject": targets[0]}
+        elif len(targets)>1:
+            where_clause={"subject": {"$in": targets}}
 
-    # 1. Keyword retrieval avoids downloading an embedding model during a web request.
-    sem_docs = []
+    sem_docs=[]
     if db_manager:
-        search_terms = [search_query, raw_query]
+        search_terms=[search_query,raw_query]
         if "Open Systems Interconnection" in search_query:
-            search_terms[0:0] = [
+            search_terms[0:0]=[
                 "seven layers",
                 "OSI Model",
-                "Open Systems Interconnection",
+                "Open Systems Interconnection"
             ]
         if "TCP/IP model" in search_query:
-            search_terms.insert(0, "TCP/IP model")
+            search_terms.insert(0,"TCP/IP model")
         search_terms.extend(
-            word for word in re.findall(r"\b[a-zA-Z0-9_-]{4,}\b", search_query)
-            if word.lower() not in {"what", "this", "that", "with", "from", "about", "explain"}
+            word for word in re.findall(r"\b[a-zA-Z0-9_-]{4,}\b",search_query)
+            if word.lower() not in {"what","this","that","with","from","about","explain"}
         )
         for term in search_terms:
-            sem_docs.extend(db_manager.keyword_search(term, limit=k + 6, where=where_clause))
+            sem_docs.extend(db_manager.keyword_search(term,limit=k+6,where=where_clause))
 
-    # 2. Safe keyword search (ONLY for non-abbreviation queries with length >= 4)
     # Short substrings like "DA" or "CN" match random substrings inside words and OCR noise!
-    kw_docs = []
-    if db_manager and len(raw_query) >= 4 and not is_short_query(raw_query):
-        keyword_queries = [raw_query]
-        subject_keyword_queries = [
-            SUBJECT_METADATA.get(subject_filter, {}).get("title", subject_filter),
+    kw_docs=[]
+    if db_manager and len(raw_query)>=4 and not is_short_query(raw_query):
+        keyword_queries=[raw_query]
+        subject_keyword_queries=[
+            SUBJECT_METADATA.get(subject_filter,{}).get("title",subject_filter)
         ]
         keyword_queries.extend(subject_keyword_queries)
 
@@ -279,115 +255,108 @@ def retrieve_context(query: str, subject_filter: str = "All Subjects", k: int = 
                 kw_docs.extend(db_manager.keyword_search(
                     keyword_query,
                     limit=min(k, 4),
-                    where=where_clause,
+                    where=where_clause
                 ))
             except Exception:
                 continue
 
-    # 3. Merge, filter out noisy OCR, and deduplicate
-    seen_prefixes: Set[str] = set()
-    merged_docs: List[str] = []
+    seen_prefixes: Set[str]=set()
+    merged_docs: List[str]=[]
 
-    for doc in (kw_docs + sem_docs):
+    for doc in (kw_docs+sem_docs):
         if not doc or not doc.strip():
             continue
         if is_garbled_ocr(doc):
             continue
 
-        prefix = doc.strip()[:140]
+        prefix=doc.strip()[:140]
         if prefix not in seen_prefixes:
             seen_prefixes.add(prefix)
             merged_docs.append(doc.strip())
 
     if not merged_docs:
-        if re.search(r"\b(what is|define|explain|overview)\b", query.lower()):
+        if re.search(r"\b(what is|define|explain|overview)\b",query.lower()):
             return _subject_scope_fallback(subject_filter)
         return ""
 
-    merged_context = "\n\n---\n\n".join(merged_docs[:k])
-    if subject_filter != "All Subjects" and re.search(
-        r"\b(what is|define|explain)\b", query.lower()
+    merged_context="\n\n---\n\n".join(merged_docs[:k])
+    if subject_filter!="All Subjects" and re.search(
+        r"\b(what is|define|explain)\b",query.lower()
     ):
-        title_tokens = re.findall(
+        title_tokens=re.findall(
             r"\b[a-zA-Z0-9]{4,}\b",
-            SUBJECT_METADATA.get(subject_filter, {}).get("title", subject_filter).lower(),
+            SUBJECT_METADATA.get(subject_filter,{}).get("title",subject_filter).lower()
         )
-        topic_tokens = tuple(title_tokens)
+        topic_tokens=tuple(title_tokens)
         if not any(token in merged_context.lower() for token in topic_tokens):
             return _subject_scope_fallback(subject_filter)
 
     return merged_context
 
 
-def is_context_relevant(query: str, context: str, active_subject: str) -> Tuple[bool, Optional[str]]:
+def is_context_relevant(query: str,context: str,active_subject: str) -> Tuple[bool,Optional[str]]:
     """
     Pre-LLM Relevance & Anti-Hallucination Gate.
     Verifies if the retrieved context actually covers the requested concept for the active subject.
     If completely out-of-scope (e.g. asking "Data Analysis" in "Java Programming"), returns a clear
     subject-specific guidance message rather than letting the LLM hallucinate general knowledge.
     """
-    active_subject = normalize_subject_name(active_subject) or active_subject
+    active_subject=normalize_subject_name(active_subject) or active_subject
 
-    if active_subject == "All Subjects":
-        return True, None
+    if active_subject=="All Subjects":
+        return True,None
 
-    subj_meta = SUBJECT_METADATA.get(active_subject, {})
-    subj_title = subj_meta.get("title", active_subject)
+    subj_meta=SUBJECT_METADATA.get(active_subject,{})
+    subj_title=subj_meta.get("title",active_subject)
 
-    # Extract meaningful keywords from query (excluding stop words)
     stop_words = {
-        "what", "is", "the", "in", "of", "and", "or", "to", "a", "an", "explain",
-        "describe", "define", "about", "give", "list", "types", "different",
-        "how", "many", "does", "do", "for", "with", "from", "by", "on", "notes",
-        "all", "some", "can", "you", "me", "tell", "show", "please"
+        "what","is","the","in","of","and","or","to","a","an","explain",
+        "describe","define","about","give","list","types","different",
+        "how","many","does","do","for","with","from","by","on","notes",
+        "all","some","can","you","me","tell","show","please"
     }
-    words = re.findall(r'\b[a-zA-Z0-9_-]+\b', query.lower())
-    query_keywords = [w for w in words if w not in stop_words and len(w) > 1]
+    words=re.findall(r'\b[a-zA-Z0-9_-]+\b',query.lower())
+    query_keywords=[w for w in words if w not in stop_words and len(w)>1]
 
     if not query_keywords:
-        return True, None
+        return True,None
 
-    # Check if the query is about the subject itself or a lab overview before enforcing
-    # the short-context rejection guard. This avoids false negatives like "What is Economics?"
-    # under POE when the retrieved snippet is a short but relevant definition.
-    subj_tokens = set(re.findall(r'\b[a-zA-Z0-9_-]+\b', f"{active_subject} {subj_title}".lower()))
-    common_lab_terms = {"lab", "experiment", "experiments", "manual", "syllabus", "overview", "programs", "list"}
-    subject_self_query = any(
+    subj_tokens=set(re.findall(r'\b[a-zA-Z0-9_-]+\b',f"{active_subject} {subj_title}".lower()))
+    common_lab_terms={"lab","experiment","experiments","manual","syllabus","overview","programs","list"}
+    subject_self_query=any(
         w in subj_tokens or w in common_lab_terms or 
-        any(w.startswith(t) or t.startswith(w) for t in subj_tokens if len(t) > 3)
+        any(w.startswith(t) or t.startswith(w) for t in subj_tokens if len(t)>3)
         for w in query_keywords
     )
-    context_subject_evidence = any(
-        re.search(r"\b" + re.escape(token) + r"\b", context.lower())
+    context_subject_evidence=any(
+        re.search(r"\b"+re.escape(token)+r"\b",context.lower())
         for token in subj_tokens
-        if len(token) > 3
+        if len(token)>3
     )
-    if subject_self_query and context_subject_evidence and len(context.strip()) > 25:
-        return True, None
+    if subject_self_query and context_subject_evidence and len(context.strip())>25:
+        return True,None
 
-    if not context or len(context.strip()) < 50:
-        fallback = OUT_OF_SCOPE_TEMPLATE.format(query=query, subject_title=subj_title)
-        return False, fallback
+    if not context or len(context.strip())<50:
+        fallback=OUT_OF_SCOPE_TEMPLATE.format(query=query,subject_title=subj_title)
+        return False,fallback
 
-    # Check if any significant query keywords appear in the retrieved context
-    context_lower = context.lower()
-    expanded = expand_query(query, active_subject=active_subject).lower()
-    expanded_words = [w for w in re.findall(r'\b[a-zA-Z0-9_-]+\b', expanded) if w not in stop_words and len(w) > 1]
+    context_lower=context.lower()
+    expanded=expand_query(query, active_subject=active_subject).lower()
+    expanded_words=[w for w in re.findall(r'\b[a-zA-Z0-9_-]+\b',expanded) if w not in stop_words and len(w)>1]
 
-    match_count = sum(1 for kw in query_keywords if re.search(r'\b' + re.escape(kw) + r'\b', context_lower))
-    expanded_match_count = sum(1 for kw in expanded_words if re.search(r'\b' + re.escape(kw) + r'\b', context_lower))
+    match_count=sum(1 for kw in query_keywords if re.search(r'\b'+re.escape(kw)+r'\b',context_lower))
+    expanded_match_count=sum(1 for kw in expanded_words if re.search(r'\b'+re.escape(kw)+r'\b',context_lower))
 
-    # Cross-subject mismatch detection (e.g. asking "Data Analysis" in "Java")
-    is_subject_mismatch = False
-    if active_subject in ["Java", "Java Lab"] and "data analysis" in query.lower():
-        is_subject_mismatch = True
-    elif active_subject in ["CN Notes", "CN Lab"] and "normal distribution" in query.lower():
-        is_subject_mismatch = True
-    elif active_subject in ["DBMS", "DBMS Lab"] and "turing machine" in query.lower():
-        is_subject_mismatch = True
+    is_subject_mismatch=False
+    if active_subject in ["Java","Java Lab"] and "data analysis" in query.lower():
+        is_subject_mismatch=True
+    elif active_subject in ["CN Notes","CN Lab"] and "normal distribution" in query.lower():
+        is_subject_mismatch=True
+    elif active_subject in ["DBMS","DBMS Lab"] and "turing machine" in query.lower():
+        is_subject_mismatch=True
 
-    if is_subject_mismatch or (match_count == 0 and expanded_match_count == 0):
-        fallback = OUT_OF_SCOPE_TEMPLATE.format(query=query, subject_title=subj_title)
-        return False, fallback
+    if is_subject_mismatch or (match_count==0 and expanded_match_count==0):
+        fallback=OUT_OF_SCOPE_TEMPLATE.format(query=query,subject_title=subj_title)
+        return False,fallback
 
-    return True, None
+    return True,None
