@@ -20,7 +20,6 @@ def ensure_vector_db_ready(persist_dir: str="./pdf_db/chromadb",zip_path: str = 
     if os.path.exists(sqlite_path) and os.path.getsize(sqlite_path) > 0:
         return True
 
-    # Attempt 1: Extract from local zip if present (case-insensitive search for Linux)
     candidate_zips=[
         zip_path,
         "./pdf_db.zip",
@@ -48,7 +47,6 @@ def ensure_vector_db_ready(persist_dir: str="./pdf_db/chromadb",zip_path: str = 
             except Exception as e:
                 print(f"Extraction error for {czip}: {e}")
 
-    # Attempt 2: Download from VECTOR_DB_URL if defined (Streamlit Cloud secret or env)
     cloud_url=os.getenv("VECTOR_DB_URL","")
     try:
         import streamlit as st
@@ -298,7 +296,6 @@ def get_vector_store() -> Optional[VectorStoreManager]:
 
 
 def get_subject_counts() -> Dict[str, int]:
-    """Return count of document chunks indexed (fast O(1) total count)."""
     try:
         manager=get_vector_store()
         if not manager or not manager.collection:
