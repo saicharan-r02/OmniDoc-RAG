@@ -12,21 +12,21 @@ os.environ["OMP_NUM_THREADS"]="1"
 os.environ["MKL_NUM_THREADS"]="1"
 os.environ["TOKENIZERS_PARALLELISM"]="false"
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI,Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse,FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
+from pydantic import BaseModel,Field
 
-from src.retrieval.retriever import retrieve_context, is_context_relevant
-from src.llm.llm_client import stream_llm_response, ALL_GROQ_MODELS
+from src.retrieval.retriever import retrieve_context,is_context_relevant
+from src.llm.llm_client import stream_llm_response,ALL_GROQ_MODELS
 from src.vectordb.vector_store import get_subject_counts
 from src.utils.helpers import SUBJECT_METADATA,SIDEBAR_CATEGORIES,SUBJECT_SAMPLE_QUESTIONS,get_groq_api_key,normalize_subject_name
 
 class ChatRequest(BaseModel):
-    question: str =Field(..., min_length=1, max_length=4000)
-    subject: str =Field(default="All Subjects")
-    chat_history: str =Field(default="")
+    question: str=Field(..., min_length=1,max_length=4000)
+    subject: str=Field(default="All Subjects")
+    chat_history: str=Field(default="")
     engine: str =Field(default="Auto Cascading Pool")
     custom_api_key: Optional[str] =Field(default="")
 
@@ -47,7 +47,7 @@ app=FastAPI(
     title="OmniDoc-RAG API",
     description="Academic RAG Assistant — Production FastAPI Backend",
     version="2.0.0",
-    lifespan=lifespan,
+    lifespan=lifespan
 )
 
 app.add_middleware(
@@ -55,7 +55,7 @@ app.add_middleware(
     allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["*"]
 )
 
 @app.get("/api/health",tags=["System"])
@@ -74,7 +74,7 @@ async def health_check():
         "total_chunks":total,
         "subjects":len(SUBJECT_METADATA),
         "groq_configured":bool(groq_key),
-        "available_models":ALL_GROQ_MODELS,
+        "available_models":ALL_GROQ_MODELS
     }
 
 @app.get("/api/subjects",tags=["Subjects"])
@@ -90,7 +90,7 @@ async def get_subjects():
                 "title":meta.get("title",key),
                 "icon":meta.get("icon","📚"),
                 "type":meta.get("type","Notes"),
-                "sample_questions":SUBJECT_SAMPLE_QUESTIONS.get(key,[]),
+                "sample_questions":SUBJECT_SAMPLE_QUESTIONS.get(key,[])
             })
         categories[cat_label]=subjects_in_cat
     return {"categories":categories}
@@ -157,7 +157,7 @@ async def chat_stream(req: ChatRequest,request: Request):
                 question=req.question,
                 chat_history=req.chat_history,
                 selected_engine=req.engine,
-                on_fallback=on_model_shift,
+                on_fallback=on_model_shift
             ))
 
         generation_future=loop.run_in_executor(None,blocking_stream)
@@ -188,7 +188,7 @@ async def chat_stream(req: ChatRequest,request: Request):
         media_type="text/event-stream",
         headers={
             "Cache-Control":"no-cache",
-            "X-Accel-Buffering":"no",
+            "X-Accel-Buffering":"no"
         }
     )
 
