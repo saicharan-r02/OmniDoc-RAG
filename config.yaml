@@ -1,4 +1,3 @@
-# OmniDoc-RAG Configuration
 app:
   name: "OmniDoc AI"
   description: "Academic RAG Assistant for Engineering Students"
