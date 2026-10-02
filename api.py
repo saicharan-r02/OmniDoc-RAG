@@ -191,6 +191,17 @@ async def chat_stream(req: ChatRequest,request: Request):
             "X-Accel-Buffering":"no"
         }
     )
+from src.ingestion.notion_loader import fetch_notion_content
+
+@app.post("/api/notion/sync", tags=["Notion"])
+async def sync_notion_endpoint():
+    """Triggers fetching page content from Notion."""
+    try:
+        docs = fetch_notion_content()
+        return {"status": "success", "count": len(docs), "message": f"Successfully loaded {len(docs)} Notion documents."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 
 frontend_path=os.path.join(os.path.dirname(__file__),"frontend")
 if os.path.exists(frontend_path):
@@ -199,7 +210,6 @@ if os.path.exists(frontend_path):
     @app.get("/",include_in_schema=False)
     async def serve_frontend():
         return FileResponse(os.path.join(frontend_path,"index.html"))
-
 
 if __name__=="__main__":
     import uvicorn
