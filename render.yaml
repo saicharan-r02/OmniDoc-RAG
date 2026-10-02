@@ -17,3 +17,7 @@ services:
         value: "false"
       - key: PYTHONUNBUFFERED
         value: "1"
+      - key: NOTION_API_KEY
+        sync: false
+      - key: NOTION_PAGE_ID
+        sync: false
