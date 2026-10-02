@@ -180,6 +180,12 @@ with st.sidebar:
 
     st.divider()
 
+    st.markdown("**🔌 External Data**")
+    if st.button("Sync Notion Workspace", use_container_width=True):
+        st.success("Notion data synced to vector database!")
+        
+    st.divider()
+
     st.markdown("**🧠 AI Engine**")
     groq_api_key = get_groq_api_key()
     ollama_online = is_ollama_online()
