@@ -820,7 +820,7 @@
         <button class="new-chat-btn" onclick="newChat()">
           <span>＋</span> New Chat
         </button>
-        <button class="new-chat-btn" style="background: var(--bg-card); color: var(--text-primary); margin-top: 8px; border: 1px solid var(--border-subtle);" onclick="alert('Notion Sync API endpoint to be connected.')">
+        <button class="new-chat-btn" style="background: var(--bg-card); color: var(--text-primary); margin-top: 8px; border: 1px solid var(--border-subtle);" onclick="triggerNotionSync()">
           <span>🔌</span> Sync Notion Page
         </button>
       </div>
@@ -1316,6 +1316,20 @@
       });
       inputBox.addEventListener("input",() => autoResizeTextarea(inputBox));
     });
+
+    async function triggerNotionSync() {
+      try {
+        const resp = await fetch("/api/notion/sync", { method: "POST" });
+        const data = await resp.json();
+        if (data.status === "success") {
+          alert(`✅ ${data.message}`);
+        } else {
+          alert(`⚠️ Notion Sync Notice: ${data.message}`);
+        }
+      } catch (err) {
+        alert(`❌ Failed to connect to Notion sync service: ${err.message}`);
+      }
+    }
   </script>
 </body>
 </html>
