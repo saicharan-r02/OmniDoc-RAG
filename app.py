@@ -178,12 +178,7 @@ with st.sidebar:
     else:
         st.caption("No saved chats yet.")
 
-    st.divider()
 
-    st.markdown("**🔌 External Data**")
-    if st.button("Sync Notion Workspace", use_container_width=True):
-        st.success("Notion data synced to vector database!")
-        
     st.divider()
 
     st.markdown("**🧠 AI Engine**")
