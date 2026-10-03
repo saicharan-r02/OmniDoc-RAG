@@ -41,7 +41,3 @@ paths:
   data_dir: "./PDF_Data"
   chat_sessions_dir: "./chat_history_sessions"
   logs_dir: "./logs"
-
-notion:
-  enabled: true
-  target_type: "page"  
