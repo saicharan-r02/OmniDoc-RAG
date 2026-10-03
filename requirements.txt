@@ -19,5 +19,4 @@ langchain-ollama>=0.1.0
 langchain-huggingface>=0.0.1
 gdown>=4.7.0
 requests>=2.28.0
-pyyaml>=6.0
-notion-client
+pyyaml>=6.0
