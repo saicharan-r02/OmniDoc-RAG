@@ -68,8 +68,8 @@ def load_single_pdf(file_path: str) -> List[Document]:
 
     if is_image_pdf(pdf):
         print(f"  [OCR SCANNING] {os.path.basename(file_path)} ({len(pdf)} pages)")
-        for page_num, page in enumerate(pdf):
-            print(f"    -> Page {page_num+1}/{len(pdf)}",end="\r")
+        for page_num,page in enumerate(pdf):
+            print(f" -> Page {page_num+1}/{len(pdf)}",end="\r")
             text=_ocr_page(page)
             if text and len(text.strip())>=30:
                 docs.append(Document(
@@ -112,7 +112,7 @@ def load_single_docx(file_path: str) -> List[Document]:
             return [Document(page_content=full_text, metadata={"source": file_path,"type": "docx"})]
     except Exception as e:
         try:
-            print(f"  [DOCX media warning] {os.path.basename(file_path)}: {e}")
+            print(f"[DOCX media warning] {os.path.basename(file_path)}:{e}")
         except Exception:
             pass
 
@@ -120,16 +120,16 @@ def load_single_docx(file_path: str) -> List[Document]:
             recovered_text=load_xml_text()
             if recovered_text.strip():
                 try:
-                    print(f"  [DOCX XML recovered] {os.path.basename(file_path)}")
+                    print(f"[DOCX XML recovered] {os.path.basename(file_path)}")
                 except Exception:
                     pass
                 return [Document(
                     page_content=recovered_text,
-                    metadata={"source": file_path,"type": "docx_xml_recovered"},
+                    metadata={"source": file_path,"type": "docx_xml_recovered"}
                 )]
         except Exception as recovery_error:
             try:
-                print(f"  [DOCX XML recovery failed] {os.path.basename(file_path)}: {recovery_error}")
+                print(f"[DOCX XML recovery failed] {os.path.basename(file_path)}: {recovery_error}")
             except Exception:
                 pass
 
