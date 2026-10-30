@@ -70,15 +70,15 @@ class TestOmniDocRAG(unittest.TestCase):
         self.assertTrue(is_rel)
 
     def test_no_cross_contamination(self):
-        expanded = expand_query("what is CN",active_subject="Java")
+        expanded=expand_query("what is CN",active_subject="Java")
         self.assertNotIn("Computer Networks",expanded)
 
     def test_cn_osi_concept_expansion(self):
-        osi_query = expand_query("what are the 7 layers",active_subject="CN Notes")
+        osi_query=expand_query("what are the 7 layers",active_subject="CN Notes")
         self.assertIn("Open Systems Interconnection",osi_query)
         self.assertIn("Application",osi_query)
         self.assertIn("Physical",osi_query)
-        tcp_query = expand_query("explain TCP/IP model",active_subject="CN Notes")
+        tcp_query=expand_query("explain TCP/IP model",active_subject="CN Notes")
         self.assertIn("TCP/IP model",tcp_query)
         self.assertIn("transport",tcp_query)
 
