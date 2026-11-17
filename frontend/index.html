@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -1020,7 +1019,6 @@
       updateSampleChips(key);
       document.getElementById("inputBox").placeholder=`Ask a question about ${currentTitle}...`;
     }
-
     function updateSampleChips(subjectKey) {
       const chips=document.getElementById("sampleChips");
       if (!chips) return;
@@ -1034,7 +1032,6 @@
         chips.appendChild(chip);
       });
     }
-
     function switchSidebarTab(tab) {
       const isSubj=tab==='subjects';
       document.getElementById("tabSubjects").classList.toggle("active", isSubj);
@@ -1043,12 +1040,10 @@
       document.getElementById("historyList").style.display = !isSubj ? "block" : "none";
       if (!isSubj) renderHistoryList();
     }
-
     function updateHistoryCount() {
       const count=getStoredSessions().length;
       document.getElementById("historyCount").textContent = count;
     }
-
     function renderHistoryList() {
       const container=document.getElementById("historyList");
       const sessions=getStoredSessions();
@@ -1071,7 +1066,6 @@
         container.appendChild(item);
       });
     }
-
     function loadSession(id) {
       const sessions=getStoredSessions();
       const sess=sessions.find(s => s.id === id);
@@ -1095,7 +1089,6 @@
       });
       renderHistoryList();
     }
-
     function deleteSession(e,id) {
       e.stopPropagation();
       let sessions=getStoredSessions().filter(s => s.id !== id);
@@ -1119,7 +1112,6 @@
       updateSampleChips(currentSubject);
       renderHistoryList();
     }
-
     async function sendMessage() {
       if (isStreaming) return;
       const inputBox=document.getElementById("inputBox");
@@ -1134,7 +1126,6 @@
       appendMessage("user",question,"👤",true);
       inputBox.value="";
       autoResizeTextarea(inputBox);
-
       const aiMsgId=`ai-${Date.now()}`;
       appendAIMessage(aiMsgId,true);
 
@@ -1142,13 +1133,11 @@
       document.getElementById("sendBtn").disabled = true;
 
       let fullResponse="";
-
       try {
         const historyStr=currentMessages
           .slice(-6)
           .map(m => `${m.role === "user" ? "User" : "Assistant"}: ${m.text}`)
           .join("\n");
-
         const requestBody={
           question,
           subject: currentSubject,
@@ -1156,7 +1145,6 @@
           engine: engine,
           custom_api_key: customKey,
         };
-
         const resp=await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1164,7 +1152,6 @@
         });
 
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-
         const reader=resp.body.getReader();
         const decoder=new TextDecoder();
         let pending="";
@@ -1174,7 +1161,6 @@
           pending+=decoder.decode(value || new Uint8Array(), { stream: !done });
           const lines=pending.split("\n");
           pending=lines.pop() || "";
-
           for (const line of lines) {
             if (!line.startsWith("data: ")) continue;
             try {
@@ -1192,13 +1178,10 @@
               }
             } catch (_) { }
           }
-
           if (done) break;
         }
-
         currentMessages.push({ role:"assistant",text: fullResponse });
         saveCurrentSession();
-
       } catch (err) {
         fullResponse=`⚠️ Server notice: ${err.message}. Please retry in a moment.`;
         renderAIMessage(aiMsgId,fullResponse);
@@ -1208,7 +1191,6 @@
         scrollToBottom();
       }
     }
-
     function appendMessage(role,text,emoji,record=true) {
       const msgs=document.getElementById("messages");
       const div=document.createElement("div");
@@ -1221,7 +1203,6 @@
       if (record) currentMessages.push({role,text});
       scrollToBottom();
     }
-
     function appendAIMessage(id,record=true) {
       const msgs=document.getElementById("messages");
       const div=document.createElement("div");
@@ -1238,7 +1219,6 @@
       msgs.appendChild(div);
       scrollToBottom();
     }
-
     function renderAIMessage(id,text) {
       const bubble=document.getElementById(`bubble-${id}`);
       if (bubble) {
@@ -1246,7 +1226,6 @@
       }
       scrollToBottom();
     }
-
     function addShiftNotice(id,shifts) {
       const wrapper=document.querySelector(`#${id}>div`);
       if (!wrapper) return;
@@ -1255,12 +1234,10 @@
       notice.textContent=shifts.map(s => `⚡ Auto-shifted: ${s.from} → ${s.to}`).join(" · ");
       wrapper.appendChild(notice);
     }
-
     function scrollToBottom() {
       const msgs=document.getElementById("messages");
       msgs.scrollTop=msgs.scrollHeight;
     }
-
     function simpleMarkdown(text) {
       return escapeHtml(text)
         .replace(/```([^`]+)```/g,'<pre><code>$1</code></pre>')
@@ -1272,16 +1249,13 @@
         .replace(/^\d+\. (.+)$/gm,'<li>$1</li>')
         .replace(/\n/g,'<br>');
     }
-
     function escapeHtml(str) {
       return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
-
     function autoResizeTextarea(el) {
       el.style.height='auto';
       el.style.height=Math.min(el.scrollHeight,140)+'px';
     }
-
     function openSettingsModal() {
       document.getElementById("customApiKeyInput").value=localStorage.getItem("omnidoc_custom_key") || "";
       document.getElementById("settingsModal").classList.add("open");
@@ -1298,12 +1272,10 @@
       }
       closeSettingsModal();
     }
-
     document.addEventListener("DOMContentLoaded", () => {
       loadSubjects();
       updateSampleChips("All Subjects");
       updateHistoryCount();
-
       const inputBox=document.getElementById("inputBox");
       inputBox.addEventListener("keydown",(e) => {
         if (e.key==="Enter" && !e.shiftKey) {
@@ -1313,7 +1285,6 @@
       });
       inputBox.addEventListener("input",() => autoResizeTextarea(inputBox));
     });
-
   </script>
 </body>
 </html>
